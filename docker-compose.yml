@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  http-server:
+    build: .
+    command: python server.py /app/content
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./content:/app/content
