@@ -1,20 +1,30 @@
 import sys
 import time
 import concurrent.futures
-import urllib.request
+import socket
 
 if len(sys.argv) != 3:
     print("Usage: python test_performance.py <host> <port>")
     sys.exit(1)
 
 host = sys.argv[1]
-port = sys.argv[2]
-url = f"http://{host}:{port}/"
+port = int(sys.argv[2])
 
 def make_request():
-    with urllib.request.urlopen(url) as response:
-        # Ensure the request completes
-        pass
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        client_socket.connect((host, port))
+        request = b'GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n'
+        client_socket.send(request)
+        # Receive full response
+        response = b''
+        while True:
+            chunk = client_socket.recv(4096)
+            if not chunk:
+                break
+            response += chunk
+    finally:
+        client_socket.close()
 
 start_time = time.time()
 
