@@ -2,6 +2,7 @@ import socket
 import sys
 import os
 import urllib.parse
+import time
 
 def get_content_type(file_path):
     if file_path.endswith('.html'):
@@ -29,11 +30,12 @@ def generate_404_html(requested_path):
     return html
 
 def handle_request(client_socket, directory):
-    import time
     request = client_socket.recv(1024).decode('utf-8')
-    time.sleep(1)
     if not request:
         return
+
+    # Simulate 1-second processing delay
+    time.sleep(1)
 
     # parse request to extract path
     request_line = request.split('\n')[0]
@@ -141,7 +143,7 @@ def main():
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('0.0.0.0', port))
-    server_socket.listen(10)
+    server_socket.listen(1)
 
     print(f"Serving directory: {directory} on http://127.0.0.1:{port}")
 

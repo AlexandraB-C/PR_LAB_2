@@ -1,21 +1,20 @@
-# PR Lab 2: Concurrent HTTP server
+# Lab 2: Concurrent HTTP Server
 
 ### Author: Bujor-Cobili Alexandra
 
 ## 1. Source Directory Structure
 ![ ](img/contents_root.png)
 
-## 2. Single-Threaded Server
-To the previous server.py I added time.sleep(1) delay in request handler to simulate work, then sent 10 concurrent requests using test_burst.py
+## Part 1: Performance Testing - Single-threaded Baseline
 
 ```
 python server.py content 8080
-python test_burst.py localhost 8080
+python tests/test_performance.py localhost 8080
 ```
 
-Screenshot 1: Terminal showing ~10 seconds
+[SCREENSHOT 1: Terminal showing test output with ~10 seconds timing]
 
-Single-threaded server processes one request at a time. With 1s delay per request, in this case 10 requests take 10.05 seconds total.
+Single-threaded server processes requests sequentially, so 10 requests with 1s delay = ~10 seconds total
 
 ## 3. Multi-Threaded Server
 
