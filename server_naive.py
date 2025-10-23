@@ -8,7 +8,6 @@ import threading
 import collections
 
 hits = collections.defaultdict(int)
-lock = threading.Lock()
 
 def get_content_type(file_path):
     if file_path.endswith('.html'):
@@ -135,9 +134,10 @@ def handle_request(client_socket, directory):
         client_socket.close()
         return
 
-    # Thread-safe counter increment
-    with lock:
-        hits[file_path] += 1
+    # Increment hit counter (naive - no lock)
+    current = hits[file_path]
+    time.sleep(0.01)  # Force race condition
+    hits[file_path] = current + 1
 
     # build response with headers and content
     with open(file_path, 'rb') as f:
@@ -148,7 +148,7 @@ def handle_request(client_socket, directory):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python server_multi.py <directory> [port]")
+        print("Usage: python server_naive.py <directory> [port]")
         sys.exit(1)
 
     directory = sys.argv[1]
@@ -161,7 +161,7 @@ def main():
     server_socket.bind(('0.0.0.0', port))
     server_socket.listen(10)
 
-    print(f"Multi-threaded server serving directory: {directory} on http://127.0.0.1:{port}")
+    print(f"Naive counter server serving directory: {directory} on http://127.0.0.1:{port}")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         while True:
