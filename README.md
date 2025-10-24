@@ -3,7 +3,7 @@
 ### Author: Bujor-Cobili Alexandra
 
 ## 1. Source Directory Structure
-![ ](img/contents_root.png)
+![ ](img/image_copy.png)
 
 
 ## 2. Single-threaded Server
