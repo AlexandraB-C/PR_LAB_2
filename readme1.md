@@ -179,9 +179,89 @@ with lock:
 | Naive (no lock)   | 50       | ~35    | ✅ YES          |
 | Fixed (lock)      | 50       | 50     | ❌ NO           |
 
-## Part 4: Request Counter (with synchronization)
+## Part 5: Rate Limiting by IP (2 points)
 
-## Part 5: Rate Limiting by IP
+This implementation limits each client IP to ~5 requests per second using a sliding window (deque of timestamps).
+
+**Rate limiting logic with lock:**
+
+```python
+# Rate limiting check
+with lock:
+    current_time = time.time()
+    # Clean old timestamps (older than 1 second)
+    while request_times[client_ip] and request_times[client_ip][0] < current_time - 1:
+        request_times[client_ip].popleft()
+    # Check if over limit (5 requests per second)
+    if len(request_times[client_ip]) >= 5:
+        response = b'HTTP/1.1 429 Too Many Requests\r\n\r\n'
+        client_socket.send(response)
+        client_socket.close()
+        return
+    # Add current timestamp
+    request_times[client_ip].append(current_time)
+```
+
+### Test Scenario 1: Client staying under limit (4 req/sec)
+
+**Commands run:**
+
+1. Start the server:
+   ```
+   python server_multi.py content 8080
+   ```
+
+2. Test with under limit rate:
+   ```
+   python tests/test_ratelimit.py 4 20 localhost 8080
+   ```
+
+**Sample output:**
+
+   ```
+   Testing rate limiting with 4 req/sec, 20 total requests
+   Successful (200): 20
+   Rate limited (429): 0
+   Throughput: 4.00 successful requests/sec
+   ```
+
+[SCREENSHOT 8: Terminal showing test_ratelimit.py output at 4 req/sec showing all 200s]
+
+### Test Scenario 2: Client exceeding limit (10 req/sec)
+
+**Commands run:**
+
+   ```
+   python tests/test_ratelimit.py 10 20 localhost 8080
+   ```
+
+**Sample output:**
+
+   ```
+   Testing rate limiting with 10 req/sec, 20 total requests
+   Request 1: 200 OK
+   Request 2: 200 OK
+   ...
+   Request 6: 429 Too Many Requests
+   Request 7: 429 Too Many Requests
+   ...
+   Successful (200): 10
+   Rate limited (429): 10
+   Throughput: 5.00 successful requests/sec
+   ```
+
+[SCREENSHOT 9: Terminal showing test_ratelimit.py output at 10 req/sec showing mix of 200s and 429s]
+
+### Rate Limiting Comparison
+
+| Request Rate | Successful | Rate Limited | Explanation |
+|-------------|------------|--------------|-------------|
+| 4 req/sec   | 20         | 0            | Under limit |
+| 10 req/sec  | 10         | 10           | Over limit  |
+
+**Explanation:** The rate limiter uses a sliding window of timestamps to track requests from each IP over the last second. It allows up to 5 requests per second per IP, returning 429 status for excess requests.
+
+## Part 6: Docker Configuration
 
 ## Part 6: Docker Configuration
 
@@ -234,7 +314,5 @@ services:
    ```
 
 [SCREENSHOT 6: Docker container running the multi-threaded server]
-
-## Part 7: Testing with Friends
 
 ## Part 7: Testing with Friends
