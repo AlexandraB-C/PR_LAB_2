@@ -16,7 +16,7 @@ def make_request():
         client_socket.connect((host, port))
         request = b'GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n'
         client_socket.send(request)
-        # Receive full response
+        # receive full response
         response = b''
         while True:
             chunk = client_socket.recv(4096)
@@ -30,9 +30,9 @@ start_time = time.time()
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
     futures = [executor.submit(make_request) for _ in range(10)]
-    # Wait for all to complete
+    # wait for all
     for future in concurrent.futures.as_completed(futures):
-        future.result()  # Raise any exceptions
+        future.result()  # exceptions
 
 end_time = time.time()
 total_time = end_time - start_time

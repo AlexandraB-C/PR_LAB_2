@@ -38,28 +38,11 @@ def generate_404_html(requested_path):
 
 def handle_request(client_socket, addr, directory):
     client_ip = addr[0]
-
-    # Rate limiting check
-    with lock:
-        current_time = time.time()
-        # Clean old timestamps (older than 1 second)
-        while request_times[client_ip] and request_times[client_ip][0] < current_time - 1:
-            request_times[client_ip].popleft()
-        # Check if over limit (5 requests per second)
-        if len(request_times[client_ip]) >= 5:
-            response = b'HTTP/1.1 429 Too Many Requests\r\n\r\n'
-            client_socket.send(response)
-            client_socket.close()
-            return
-        # Add current timestamp
-        request_times[client_ip].append(current_time)
-
+    
     request = client_socket.recv(1024).decode('utf-8')
     if not request:
+        client_socket.close()
         return
-
-    # Simulate 1-second processing delay
-    time.sleep(1)
 
     # parse request to extract path
     request_line = request.split('\n')[0]
@@ -77,8 +60,37 @@ def handle_request(client_socket, addr, directory):
     if path.startswith('/'):
         path = path[1:]
 
-    # Log request processing
-    print(f"Processing request for {path}")
+    # lim check
+    rate_limited = False
+    with lock:
+        current_time = time.time()
+        # clean old timestamps
+        while request_times[client_ip] and request_times[client_ip][0] < current_time - 1:
+            request_times[client_ip].popleft()
+        if len(request_times[client_ip]) >= 5:
+            rate_limited = True
+            print(f"[RATE LIMIT] Blocking request from {client_ip} - already {len(request_times[client_ip])} requests in last second")
+        else:
+            # + current timestamp (if not rate limited)
+            request_times[client_ip].append(current_time)
+    
+    if rate_limited:
+        response = b'HTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\nConnection: close\r\n\r\n'
+        try:
+            client_socket.sendall(response)
+            time.sleep(0.1)
+            client_socket.shutdown(socket.SHUT_RDWR)
+        except:
+            pass
+        finally:
+            client_socket.close()
+        return
+
+
+    print(f" Processing request from {client_ip} for /{path}")
+
+    # processing delay
+    time.sleep(1)
 
     file_path = os.path.join(directory, path)
 
@@ -153,7 +165,7 @@ def handle_request(client_socket, addr, directory):
         client_socket.close()
         return
 
-    # Thread-safe counter increment
+    # thread counter increment
     with lock:
         hits[file_path] += 1
 

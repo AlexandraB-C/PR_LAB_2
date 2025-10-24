@@ -26,14 +26,13 @@ def make_request():
         client_socket.connect((host, port))
         request = f'GET {url_path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n'.encode()
         client_socket.send(request)
-        # Receive full response
+        # receive full response
         response = b''
         while True:
             chunk = client_socket.recv(4096)
             if not chunk:
                 break
             response += chunk
-        # Check if response contains HTTP/1.1 200 OK
         if b'HTTP/1.1 200 OK' in response:
             success = True
     except Exception:
